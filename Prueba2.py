@@ -1,5 +1,5 @@
-import os
-import requests
+import os #proporciona funciones de interaccion con el Sistema operativo
+import requests #proporciona funciones para realizar solicitudes http
 import threading
 
 # Función para descargar una imagen desde una URL
@@ -17,13 +17,24 @@ def descargar_imagen(url, nombre_archivo):
         print("Ocurrió un error:", e)
     return False
 
-# Función para realizar la descarga en un hilo
-def descargar_en_hilo(url, nombre_archivo):
-    if os.path.exists(nombre_archivo):
-        print("El archivo ya existe:", nombre_archivo)
-    else:
-        print("Intentando descargar:", url)
-        descargar_imagen(url, nombre_archivo)
+def descargar_en_hilo(url, nombre_archivo, terminado):
+    contador = 0
+    while contador < 500:
+        numero_imagen = str(contador).zfill(3)
+        url_imagen = f"{url}{numero_imagen}{extension}"
+        nombre_archivo = f"{nombre_archivo}imagen_descargada_{contador}.jpg"
+        print("Intentando descargar:", url_imagen)
+
+        if os.path.exists(nombre_archivo):
+            print("El archivo ya existe:", nombre_archivo)
+        else:
+            print("Intentando descargar:", url_imagen)
+            if not descargar_imagen(url_imagen, nombre_archivo):
+                break
+
+        contador += 1
+
+    terminado.set()  # Indicar que el hilo ha terminado
 
 # Lista de URLs de libros
 urls_libros = [
@@ -68,30 +79,24 @@ urls_libros = [
 
 extension = ".jpg"
 
-# Iterar a través de cada enlace de libro
-for base_url in urls_libros:
-    # Extraer el nombre del libro del enlace
-    nombre_libro = base_url.split("/")[-2]
+# Crear hilos y variables de evento para indicar finalización
+hilos = []
+terminados = [threading.Event() for _ in urls_libros]
 
-    # Crear una carpeta para el libro si no existe
+# Iterar a través de cada enlace de libro y crear hilos para descargar imágenes
+for idx, base_url in enumerate(urls_libros):
+    nombre_libro = base_url.split("/")[-2]
     carpeta_libro = f"{nombre_libro}/"
     if not os.path.exists(carpeta_libro):
         os.makedirs(carpeta_libro)
-        
-    threads = []
-    contador = 0
-     while True:
-        numero_imagen = str(contador).zfill(3)
-        url_imagen = f"{base_url}{numero_imagen}{extension}"
-        nombre_archivo = f"{carpeta_libro}imagen_descargada_{contador}.jpg"
 
-        # Crear un hilo para la descarga
-        thread = threading.Thread(target=descargar_en_hilo, args=(url_imagen, nombre_archivo))
-        thread.start()
-        threads.append(thread)
+    hilo = threading.Thread(target=descargar_en_hilo, args=(base_url, carpeta_libro, terminados[idx]))
+    hilos.append(hilo)
+    hilo.start()
 
-        contador += 1
+# Esperar a que todos los hilos terminen
+for hilo, terminado in zip(hilos, terminados):
+    terminado.wait()
+    hilo.join()
 
-    # Esperar a que todos los hilos terminen
-    for thread in threads:
-        thread.join()
+print("Todas las descargas han sido completadas.")
