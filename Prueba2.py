@@ -1,7 +1,9 @@
-import os #proporciona funciones de interaccion con el Sistema operativo
-import requests #proporciona funciones para realizar solicitudes http 
+import os
+import requests
 
-# Función para descargar una imagen desde una URL
+DOWNLOAD_FOLDER = "libros_descargados/"
+EXTENSION = ".jpg"
+
 def descargar_imagen(url, nombre_archivo):
     try:
         respuesta = requests.get(url)
@@ -16,10 +18,9 @@ def descargar_imagen(url, nombre_archivo):
         print("Ocurrió un error:", e)
     return False
 
-# Lista de URLs de libros
-urls_libros = [
-    # Lista de enlaces a los libros
-   "https://www.conaliteg.sep.gob.mx/2023/c/P1LPM/",
+def main():
+    urls_libros = [
+         "https://www.conaliteg.sep.gob.mx/2023/c/P1LPM/",
     "https://www.conaliteg.sep.gob.mx/2023/c/P1MLA/",
     "https://www.conaliteg.sep.gob.mx/2023/c/P1PAA/",
     "https://www.conaliteg.sep.gob.mx/2023/c/P1PCA/",
@@ -55,30 +56,27 @@ urls_libros = [
     "https://www.conaliteg.sep.gob.mx/2023/c/P6PEA/",
     "https://www.conaliteg.sep.gob.mx/2023/c/P6PCA/",
     "https://www.conaliteg.sep.gob.mx/2023/c/P6SDA/"
-]
+    ]
 
-extension = ".jpg"
+    for base_url in urls_libros:
+        nombre_libro = base_url.split("/")[-2]
+        carpeta_libro = os.path.join(DOWNLOAD_FOLDER, nombre_libro)
 
-# Iterar a través de cada enlace de libro
-for base_url in urls_libros:
-    # Extraer el nombre del libro del enlace
-    nombre_libro = base_url.split("/")[-2]
-    
-    # Crear una carpeta para el libro si no existe
-    carpeta_libro = f"{nombre_libro}/"
-    if not os.path.exists(carpeta_libro):
-        os.makedirs(carpeta_libro)
+        if not os.path.exists(carpeta_libro):
+            os.makedirs(carpeta_libro)
 
-    contador = 0
-    while True:
-        numero_imagen = str(contador).zfill(3) #Convertir contador a cadena de 3 digitos con relleno de ceros
-        url_imagen = f"{base_url}{numero_imagen}{extension}" #Construir URL completa de la imagen
-        print("Intentando descargar:", url_imagen) 
+        contador = 0
+        while True:
+            numero_imagen = str(contador).zfill(3)
+            url_imagen = f"{base_url}{numero_imagen}{EXTENSION}"
+            print("Intentando descargar:", url_imagen)
 
-        nombre_archivo = f"{carpeta_libro}imagen_descargada_{contador}.jpg" #Crear nombre de archivo
+            nombre_archivo = os.path.join(carpeta_libro, f"imagen_descargada_{contador}.jpg")
 
-        # Intentar descargar la imagen usando la funcion descargar_imagen
-        if not descargar_imagen(url_imagen, nombre_archivo):
-            break
+            if not descargar_imagen(url_imagen, nombre_archivo):
+                break
 
-        contador += 1 #incrementar contador para la siguiente imagen
+            contador += 1
+
+if __name__ == "__main__":
+    main()
